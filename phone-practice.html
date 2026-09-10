@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家人電話簿練習</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; touch-action: none; user-select: none;
+        }
+
+        #phone-container {
+            width: 100%; max-width: 400px; height: 95vh; max-height: 800px;
+            background-color: #ffffff; border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2); padding: 25px 20px;
+            box-sizing: border-box; border: 12px solid #333;
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+
+        #screen {
+            height: 90px; background-color: #f8f9fa; border-radius: 15px;
+            margin-bottom: 25px; display: flex; justify-content: center; align-items: center;
+            font-size: 2.5rem; font-weight: bold; letter-spacing: 3px; color: #333;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        #keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; flex: 1;
+        }
+
+        .key {
+            background-color: #e4e6eb; border: none; border-radius: 50%;
+            width: 80px; height: 80px; font-size: 2rem; color: #333; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: center; align-items: center;
+            margin: 0 auto; transition: 0.1s; box-shadow: 0 4px 0 #cfd1d6;
+        }
+        .key:active { transform: translateY(4px); box-shadow: 0 0 0 #cfd1d6; }
+
+        .call-btn { background-color: #4cd137; color: white; box-shadow: 0 4px 0 #44bd32; }
+        .call-btn:active { box-shadow: 0 0 0 #44bd32; }
+        .clear-btn { background-color: #e84118; color: white; font-size: 1.4rem; box-shadow: 0 4px 0 #c23616; }
+        .clear-btn:active { box-shadow: 0 0 0 #c23616; }
+
+        /* 通話與錯誤回饋畫面 */
+        #feedback-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.98); display: none; 
+            flex-direction: column; justify-content: center; align-items: center; z-index: 10;
+        }
+
+        #family-photo {
+            width: 180px; height: 180px; border-radius: 50%; object-fit: cover;
+            border: 8px solid #4cd137; display: none; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        #feedback-icon { font-size: 6rem; margin-bottom: 10px; }
+        #feedback-title { font-size: 2rem; font-weight: bold; color: #333; margin-bottom: 10px; }
+        #feedback-status { font-size: 1.2rem; color: #666; margin-bottom: 30px; }
+
+        #end-call-btn {
+            padding: 15px 40px; font-size: 1.5rem; border: none; border-radius: 30px;
+            background-color: #e84118; color: white; cursor: pointer; font-weight: bold;
+            display: none; box-shadow: 0 5px 0 #c23616;
+        }
+        #end-call-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #c23616; }
+
+    </style>
+</head>
+<body>
+
+    <div id="phone-container">
+        <div id="screen"></div>
+
+        <div id="keypad">
+            <button class="key" onclick="inputNumber('1')">1</button>
+            <button class="key" onclick="inputNumber('2')">2</button>
+            <button class="key" onclick="inputNumber('3')">3</button>
+            <button class="key" onclick="inputNumber('4')">4</button>
+            <button class="key" onclick="inputNumber('5')">5</button>
+            <button class="key" onclick="inputNumber('6')">6</button>
+            <button class="key" onclick="inputNumber('7')">7</button>
+            <button class="key" onclick="inputNumber('8')">8</button>
+            <button class="key" onclick="inputNumber('9')">9</button>
+            <button class="key clear-btn" onclick="clearScreen()">刪除</button>
+            <button class="key" onclick="inputNumber('0')">0</button>
+            <button class="key call-btn" onclick="makeCall()">📞</button>
+        </div>
+
+        <div id="feedback-overlay">
+            <div id="feedback-icon"></div>
+            <img id="family-photo" src="" alt="照片">
+            <div id="feedback-title"></div>
+            <div id="feedback-status"></div>
+            <button id="end-call-btn" onclick="resetPhone()">掛斷電話</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 開發者設定區：在這裡建立你的「數位電話簿」
+        // ==========================================
+        const phoneBook = [
+            { 
+                name: "媽媽", 
+                number: "0921913446", 
+                // 替換為實際的照片網址或相對路徑
+                photoUrl: "" 
+            },
+            { 
+                name: "爸爸", 
+                number: "0989162060", 
+                photoUrl: "" 
+            },
+            { 
+                name: "", 
+                number: "", 
+                photoUrl: "" 
+            }
+        ];
+
+        // ==========================================
+        // 系統邏輯區
+        // ==========================================
+        let currentInput = ""; 
+        const screenEl = document.getElementById('screen');
+        const feedbackOverlay = document.getElementById('feedback-overlay');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackStatus = document.getElementById('feedback-status');
+        const familyPhoto = document.getElementById('family-photo');
+        const endCallBtn = document.getElementById('end-call-btn');
+
+        function inputNumber(num) {
+            if (currentInput.length < 15) {
+                currentInput += num;
+                screenEl.innerText = currentInput;
+            }
+        }
+
+        function clearScreen() {
+            currentInput = currentInput.slice(0, -1);
+            screenEl.innerText = currentInput;
+        }
+
+        function makeCall() {
+            if (currentInput === "") return; 
+
+            // 在 phoneBook 陣列中尋找是否有符合輸入號碼的聯絡人
+            const matchedContact = phoneBook.find(contact => contact.number === currentInput);
+
+            feedbackOverlay.style.display = "flex"; 
+
+            if (matchedContact) {
+                // 找到聯絡人：顯示正確畫面與照片
+                feedbackIcon.style.display = "none"; 
+                
+                familyPhoto.src = matchedContact.photoUrl;
+                familyPhoto.style.display = "block"; 
+                
+                feedbackTitle.innerText = `撥號給：${matchedContact.name}`;
+                feedbackTitle.style.color = "#333";
+                feedbackStatus.innerText = "通話中 00:01...";
+                
+                endCallBtn.style.display = "block"; 
+            } else {
+                // 找不到聯絡人：顯示錯誤畫面
+                feedbackIcon.style.display = "block";
+                feedbackIcon.innerText = "❌";
+                familyPhoto.style.display = "none"; 
+                endCallBtn.style.display = "none";
+                
+                feedbackTitle.innerText = "號碼錯誤";
+                feedbackTitle.style.color = "#e84118";
+                feedbackStatus.innerText = "這不是家人的電話喔！";
+                
+                // 錯誤時，2.5秒後自動關閉回饋畫面並清空輸入
+                setTimeout(() => {
+                    resetPhone();
+                }, 2500);
+            }
+        }
+
+        function resetPhone() {
+            feedbackOverlay.style.display = "none";
+            currentInput = "";
+            screenEl.innerText = currentInput;
+        }
+    </script>
+</body>
+</html>
